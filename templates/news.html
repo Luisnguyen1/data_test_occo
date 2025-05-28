@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý News</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            padding: 20px;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        .card-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 30px;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .btn-success {
+            border-radius: 25px;
+            padding: 8px 20px;
+        }
+        .btn-warning {
+            border-radius: 25px;
+            padding: 8px 20px;
+        }
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .table thead th {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+        .table tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+        }
+        .status-success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .status-error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .loading {
+            display: none;
+        }
+        .spinner-border {
+            width: 1rem;
+            height: 1rem;
+        }
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h2><i class="fas fa-newspaper"></i> Quản lý News</h2>
+                        <p class="mb-0">Đăng và quản lý bài viết từ Google Sheets</p>
+                    </div>                    <div class="card-body">
+                        <!-- Navigation -->
+                        <div class="text-center mb-4">
+                            <a href="/" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-left"></i> Quay lại trang chính
+                            </a>
+                        </div>
+
+                        <!-- Alert Messages -->
+                        <div id="alertContainer"></div>
+
+                        <!-- News List -->
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5><i class="fas fa-list"></i> Danh sách bài viết</h5>
+                                <button id="refreshNewsButton" class="btn btn-sm btn-outline-light">
+                                    <i class="fas fa-sync"></i> Làm mới
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>User ID</th>
+                                                <th>Tiêu đề</th>
+                                                <th>Nội dung</th>
+                                                <th>Quyền riêng tư</th>
+                                                <th>Trạng thái</th>
+                                                <th>Thao tác</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="newsTableBody">
+                                            <tr>
+                                                <td colspan="6" class="text-center">
+                                                    <div class="spinner-border" role="status">
+                                                        <span class="visually-hidden">Đang tải...</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let accountData = [];
+        let newsData = [];
+        
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAccountData();
+            loadNewsData();
+        });
+
+        // Event listeners
+        document.getElementById('refreshNewsButton').addEventListener('click', loadNewsData);
+        
+        async function loadAccountData() {
+            try {
+                const response = await fetch('/api/accounts');
+                accountData = await response.json();
+            } catch (error) {
+                showAlert('Lỗi khi tải dữ liệu tài khoản: ' + error.message, 'danger');
+            }
+        }
+
+        async function loadNewsData() {
+            try {
+                showAlert('Đang tải dữ liệu bài viết...', 'info');
+                
+                const response = await fetch('/api/news');
+                newsData = await response.json();
+
+                renderNewsTable();
+                clearAlert();
+            } catch (error) {
+                showAlert('Lỗi khi tải dữ liệu bài viết: ' + error.message, 'danger');
+            }
+        }
+        
+        async function postSingleNews(newsId, rowIndex) {
+            const postBtn = document.getElementById(`post-btn-${rowIndex}`);
+            const loading = document.getElementById(`loading-${rowIndex}`);
+            
+            try {
+                postBtn.disabled = true;
+                loading.style.display = 'inline-block';
+                
+                const news = newsData[rowIndex];
+                const userId = news.user_id;
+                
+                // Tìm thông tin tài khoản từ userId
+                const account = accountData.find(acc => acc.id === userId);
+                if (!account || !account.phone_number || !account.password) {
+                    showAlert(`Không tìm thấy thông tin tài khoản cho User ID: ${userId}`, 'danger');
+                    return;
+                }
+                
+                // Tự động đăng nhập để lấy token
+                showAlert('Đang đăng nhập để lấy token...', 'info');
+                const loginResponse = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        phone_number: account.phone_number,
+                        password: account.password
+                    })
+                });
+                
+                const loginResult = await loginResponse.json();
+                if (!loginResult.success || !loginResult.token) {
+                    showAlert(`Đăng nhập thất bại: ${loginResult.message || 'Không thể lấy token'}`, 'danger');
+                    return;
+                }
+                
+                // Đã đăng nhập thành công, tiếp tục đăng bài
+                const accessToken = loginResult.token;
+                showAlert('Đăng nhập thành công, đang đăng bài...', 'info');
+                
+                const response = await fetch('/api/post_single_news', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        token: accessToken,
+                        row_index: rowIndex,
+                        user_id: news.user_id,
+                        title: news.title,
+                        content: news.content,
+                        privacy: news.privacy,
+                        files: news.files
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(`Đăng bài thành công với ID: ${result.news_id}`, 'success');
+                    // Reload news data
+                    await loadNewsData();
+                } else {
+                    showAlert(`Đăng bài thất bại: ${result.message}`, 'danger');
+                }
+            } catch (error) {
+                showAlert(`Lỗi khi đăng bài: ${error.message}`, 'danger');
+            } finally {
+                if (postBtn) {
+                    postBtn.disabled = false;
+                }
+                if (loading) {
+                    loading.style.display = 'none';
+                }
+            }
+        }
+
+        function renderNewsTable() {
+            const tbody = document.getElementById('newsTableBody');
+            tbody.innerHTML = '';
+            
+            if (newsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Không có dữ liệu bài viết</td></tr>';
+                return;
+            }
+            
+            newsData.forEach((news, index) => {
+                const row = document.createElement('tr');
+                
+                // Apply row styling based on status
+                if (news.status === 'uploaded' || news.status === 'posted') {
+                    row.className = 'table-success';
+                } else if (news.status === 'failed') {
+                    row.className = 'table-danger';
+                } else if (news.status === 'not_upload') {
+                    row.className = 'table-warning';
+                }
+                
+                const showUploadButton = !news.news_id && news.status !== 'uploaded' && news.status !== 'posted';
+                
+                row.innerHTML = `
+                    <td>${news.user_id || ''}</td>
+                    <td>${news.title || ''}</td>
+                    <td>${news.content ? (news.content.length > 50 ? news.content.substring(0, 50) + '...' : news.content) : ''}</td>
+                    <td>${news.privacy || 'PUBLIC'}</td>
+                    <td>
+                        <span class="badge ${getBadgeClass(news.status)}">
+                            ${news.status || 'Chưa đăng'}
+                        </span>
+                        ${news.news_id ? `<br><small class="text-muted">ID: ${news.news_id}</small>` : ''}
+                    </td>
+                    <td>                        ${showUploadButton ? 
+                            `<button id="post-btn-${index}" class="btn btn-sm btn-primary" onclick="postSingleNews('${news.id || ''}', ${index})">
+                                <i class="fas fa-paper-plane"></i> Đăng bài
+                                <span id="loading-${index}" class="loading">
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                </span>
+                            </button>` : 
+                            (news.news_id ? '<span class="text-success"><i class="fas fa-check-circle"></i> Đã đăng</span>' : '<span class="text-muted">Không thể đăng</span>')}
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        function getBadgeClass(status) {
+            const statusLower = (status || '').toLowerCase();
+            switch(statusLower) {
+                case 'uploaded': 
+                case 'posted': return 'bg-success';
+                case 'failed': return 'bg-danger';
+                case 'not_upload': return 'bg-warning';
+                default: return 'bg-secondary';
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertClass = type === 'success' ? 'alert-success' : 
+                             type === 'danger' ? 'alert-danger' : 
+                             type === 'warning' ? 'alert-warning' : 'alert-info';
+            
+            alertContainer.innerHTML = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+        
+        function clearAlert() {
+            document.getElementById('alertContainer').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

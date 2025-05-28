@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý tài khoản</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            padding: 20px;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        .card-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 30px;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .table thead th {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+        .table tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+        }
+        .status-success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .status-error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .loading {
+            display: none;
+        }
+        .spinner-border {
+            width: 1rem;
+            height: 1rem;
+        }
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        .phone-number {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #495057;
+        }
+        .password {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h2><i class="fas fa-users"></i> Quản lý tài khoản</h2>
+                        <p class="mb-0">Tạo và quản lý tài khoản ngẫu nhiên</p>
+                    </div>
+                    <div class="card-body">                        <!-- Create Account Section -->
+                        <div class="text-center mb-4">                            <div class="row g-2 justify-content-center">
+                                <div class="col-auto">
+                                    <button id="createAccountBtn" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-plus-circle"></i> Tạo 1 tài khoản
+                                    </button>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="input-group">
+                                        <input type="number" id="accountCount" class="form-control" value="5" min="1" max="10" style="width: 80px;">
+                                        <button id="createMultipleBtn" class="btn btn-success">
+                                            <i class="fas fa-plus"></i> Tạo nhiều
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- <div class="col-auto">
+                                    <button id="updateUserInfoBtn" class="btn btn-info">
+                                        <i class="fas fa-user-edit"></i> Cập nhật User Info
+                                    </button>
+                                </div> -->
+                                <div class="col-auto">
+                                    <a href="/update_user_info_page" class="btn btn-warning">
+                                        <i class="fas fa-cog"></i> Quản lý User Info
+                                    </a>
+                                </div>
+                                <div class="col-auto">
+                                    <a href="https://docs.google.com/spreadsheets/d/18kYNbaS6RtLV2r2MiqQPm0YqrGQiWYtBhIySyrWlg_M/edit?gid=0#gid=0" class="btn btn-success" >
+                                        <i class="fas fa-cog"></i> Sheet quản lý 
+                                    </a>
+                                </div>
+                                <div class="col-auto">
+                                    <a href="/news_page" class="btn btn-info">
+                                        <i class="fas fa-newspaper"></i> Quản lý News
+                                    </a>
+                                </div>
+
+                                <div class="col-auto">
+                                    <a href="/blog_page" class="btn btn-info">
+                                        <i class="fas fa-newspaper"></i> Quản lý Blog
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="loading mt-3">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Đang tạo...</span>
+                                </div>
+                                <p class="mt-2"><span id="loadingText">Đang tạo tài khoản...</span></p>
+                                <div class="progress mt-2" style="display: none;">
+                                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Alert Section -->
+                        <div id="alertSection"></div>
+
+                        <!-- Statistics -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="card text-center" style="background: linear-gradient(45deg, #28a745, #20c997);">
+                                    <div class="card-body text-white">
+                                        <h3 id="totalAccounts">{{ accounts|length }}</h3>
+                                        <p class="mb-0">Tổng tài khoản</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card text-center" style="background: linear-gradient(45deg, #007bff, #0056b3);">
+                                    <div class="card-body text-white">
+                                        <h3 id="successAccounts">{{ accounts|selectattr('status', 'equalto', '200')|list|length }}</h3>
+                                        <p class="mb-0">Thành công</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card text-center" style="background: linear-gradient(45deg, #dc3545, #c82333);">
+                                    <div class="card-body text-white">
+                                        <h3 id="errorAccounts">{{ accounts|rejectattr('status', 'equalto', '200')|list|length }}</h3>
+                                        <p class="mb-0">Lỗi</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accounts Table -->
+                        <div class="table-responsive">
+                            <table class="table table-hover">                                <thead>
+                                    <tr>
+                                        <th><i class="fas fa-phone"></i> Số điện thoại</th>
+                                        <th><i class="fas fa-key"></i> Mật khẩu</th>
+                                        <th><i class="fas fa-info-circle"></i> Trạng thái</th>
+                                        <th><i class="fas fa-comment"></i> Phản hồi</th>
+                                        <th><i class="fas fa-clock"></i> Thời gian</th>
+                                        <th><i class="fas fa-id-card"></i> ID</th>
+                                    </tr>
+                                </thead>                                <tbody id="accountsTable">
+                                    {% for account in accounts %}
+                                    <tr>
+                                        <td class="phone-number">{{ account.phone_number }}</td>
+                                        <td><span class="password">{{ account.password }}</span></td>
+                                        <td>
+                                            {% if account.status == 'created' %}
+                                                <span class="status-success"><i class="fas fa-check-circle"></i> Đã tạo</span>
+                                            {% else %}
+                                                <span class="status-error"><i class="fas fa-times-circle"></i> Chưa tạo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if account.response|length > 50 %}
+                                                <span title="{{ account.response }}">{{ account.response[:50] }}...</span>
+                                            {% else %}
+                                                {{ account.response }}
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ account.timestamp }}</td>
+                                        <td>
+                                            {% if account.account_id %}
+                                                <span class="text-muted small">{{ account.account_id[:8] }}...</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% if not accounts %}
+                            <div class="text-center p-4">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Chưa có tài khoản nào. Hãy tạo tài khoản đầu tiên!</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>    <script>
+        // Function to create single account
+        function createSingleAccount() {
+            const btn = document.getElementById('createAccountBtn');
+            const multiBtn = document.getElementById('createMultipleBtn');
+            const loading = document.querySelector('.loading');
+            const alertSection = document.getElementById('alertSection');
+            const loadingText = document.getElementById('loadingText');
+            
+            // Show loading
+            btn.style.display = 'none';
+            multiBtn.style.display = 'none';
+            loading.style.display = 'block';
+            alertSection.innerHTML = '';
+            loadingText.textContent = 'Đang tạo tài khoản...';
+            
+            fetch('/create_account', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading
+                loading.style.display = 'none';
+                btn.style.display = 'inline-block';
+                multiBtn.style.display = 'inline-block';
+                
+                // Show alert
+                const alertClass = data.success ? 'alert-success' : 'alert-danger';
+                const alertIcon = data.success ? 'fa-check-circle' : 'fa-times-circle';
+                
+                alertSection.innerHTML = `
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        <i class="fas ${alertIcon}"></i> 
+                        <strong>${data.success ? 'Thành công!' : 'Lỗi!'}</strong> ${data.message}
+                        <br>
+                        <small>Số điện thoại: ${data.account_data.phone_number} | Mật khẩu: ${data.account_data.password}</small>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                
+                // Reload page after 2 seconds to show new account
+                if (data.success) {
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                }
+            })
+            .catch(error => {
+                handleError(error);
+            });
+        }
+
+        // Function to create multiple accounts
+        function createMultipleAccounts() {
+            const btn = document.getElementById('createAccountBtn');
+            const multiBtn = document.getElementById('createMultipleBtn');
+            const loading = document.querySelector('.loading');
+            const alertSection = document.getElementById('alertSection');
+            const loadingText = document.getElementById('loadingText');
+            const progress = document.querySelector('.progress');
+            const progressBar = document.querySelector('.progress-bar');
+            const count = parseInt(document.getElementById('accountCount').value);
+            
+            if (count < 1 || count > 10) {
+                alert('Số lượng phải từ 1 đến 10');
+                return;
+            }
+            
+            // Show loading
+            btn.style.display = 'none';
+            multiBtn.style.display = 'none';
+            loading.style.display = 'block';
+            progress.style.display = 'block';
+            alertSection.innerHTML = '';
+            loadingText.textContent = `Đang tạo ${count} tài khoản...`;
+            progressBar.style.width = '0%';
+            
+            fetch('/create_multiple_accounts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ count: count })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading
+                loading.style.display = 'none';
+                progress.style.display = 'none';
+                btn.style.display = 'inline-block';
+                multiBtn.style.display = 'inline-block';
+                
+                // Show alert
+                const alertClass = data.success ? 'alert-success' : 'alert-danger';
+                const alertIcon = data.success ? 'fa-check-circle' : 'fa-times-circle';
+                
+                let detailsHtml = '';
+                if (data.results && data.results.length > 0) {
+                    detailsHtml = '<br><small>';
+                    data.results.forEach((result, index) => {
+                        const status = result.saved ? '✅' : '❌';
+                        detailsHtml += `${status} ${result.account_data.phone_number}<br>`;
+                    });
+                    detailsHtml += '</small>';
+                }
+                
+                alertSection.innerHTML = `
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        <i class="fas ${alertIcon}"></i> 
+                        <strong>${data.success ? 'Hoàn thành!' : 'Lỗi!'}</strong> ${data.message}
+                        ${detailsHtml}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                
+                // Reload page after 3 seconds to show new accounts
+                if (data.success) {
+                    setTimeout(() => {
+                        location.reload();
+                    }, 3000);
+                }
+            })
+            .catch(error => {
+                handleError(error);
+            });
+        }
+
+        function handleError(error) {
+            const btn = document.getElementById('createAccountBtn');
+            const multiBtn = document.getElementById('createMultipleBtn');
+            const loading = document.querySelector('.loading');
+            const alertSection = document.getElementById('alertSection');
+            
+            // Hide loading
+            loading.style.display = 'none';
+            btn.style.display = 'inline-block';
+            multiBtn.style.display = 'inline-block';
+            
+            alertSection.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-times-circle"></i> 
+                    <strong>Lỗi!</strong> Không thể tạo tài khoản: ${error.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;        }
+
+        // Update User Info function
+        async function updateUserInfo() {
+            const btn = document.getElementById('updateUserInfoBtn');
+            const loading = document.querySelector('.loading');
+            const alertSection = document.getElementById('alertSection');
+            const loadingText = document.getElementById('loadingText');
+            const progressBar = document.querySelector('.progress-bar');
+            const progress = document.querySelector('.progress');
+            
+            try {
+                // Show loading
+                btn.style.display = 'none';
+                loading.style.display = 'block';
+                loadingText.textContent = 'Đang cập nhật user info...';
+                progress.style.display = 'block';
+                progressBar.style.width = '0%';
+                
+                // Clear previous alerts
+                alertSection.innerHTML = '';
+                
+                const response = await fetch('/update_multiple_user_info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                // Hide loading
+                loading.style.display = 'none';
+                btn.style.display = 'inline-block';
+                progress.style.display = 'none';
+                
+                if (data.success) {
+                    alertSection.innerHTML = `
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle"></i> 
+                            <strong>Thành công!</strong> ${data.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    `;
+                    
+                    // Auto reload after 2 seconds
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    alertSection.innerHTML = `
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            <strong>Lưu ý!</strong> ${data.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                // Hide loading
+                loading.style.display = 'none';
+                btn.style.display = 'inline-block';
+                progress.style.display = 'none';
+                
+                alertSection.innerHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-times-circle"></i> 
+                        <strong>Lỗi!</strong> Không thể cập nhật user info: ${error.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+            }
+        }
+
+        // Event listeners
+        document.getElementById('createAccountBtn').addEventListener('click', createSingleAccount);
+        document.getElementById('createMultipleBtn').addEventListener('click', createMultipleAccounts);
+        document.getElementById('updateUserInfoBtn').addEventListener('click', updateUserInfo);
+
+        // Auto refresh every 30 seconds
+        setInterval(() => {
+            // Chỉ refresh nếu không có loading
+            if (document.querySelector('.loading').style.display === 'none') {
+                location.reload();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
